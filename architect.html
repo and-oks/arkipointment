@@ -15,9 +15,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
     <script>
-      //  web app's Firebase configuration
       const firebaseConfig = {
-        apiKey: "AIzaSyDWbXPNHbF5Hj4rQ8lwQA_C1cnqmpHltsc", // Fixed master key
+        apiKey: "AIzaSyDWbXPNHbF5Hj4rQ8lwQA_C1cnqmpHltsc", 
         authDomain: "arkipointment.firebaseapp.com",
         projectId: "arkipointment",
         storageBucket: "arkipointment.firebasestorage.app",
@@ -26,7 +25,6 @@
         databaseURL: "https://arkipointment-default-rtdb.firebaseio.com"
       };
       
-      // initalize firebase
       if (!firebase.apps.length) {
           firebase.initializeApp(firebaseConfig);
       }
@@ -61,16 +59,16 @@
                     <input type="file" id="archAvatarUpload" accept="image/*" class="hidden-file-input" disabled onchange="handleArchAvatar(event)">
                 </div>
 
-                <h2 class="profile-title-name" id="archNameHeader">Ar. Vanessa</h2>
+                <h2 class="profile-title-name" id="archNameHeader">Architect Profile</h2>
                 
                 <div class="editable-email-container">
                     <label class="field-label-spec">Email:</label>
-                    <input type="email" id="archEmailInput" value="arvanessa@gmail.com" readonly class="profile-static-input">
+                    <input type="email" id="archEmailInput" placeholder="Loading email..." readonly class="profile-static-input">
                 </div>
 
                 <div class="editable-email-container" style="margin-top: 15px; flex-direction: column; align-items: flex-start; gap: 4px;">
                     <label class="field-label-spec">Specialization & Bio:</label>
-                    <textarea id="archBioInput" readonly class="profile-static-input" style="width: 100%; height: 75px; resize: none; font-family: inherit; font-size: 0.85rem; padding: 8px; border-radius: 8px; box-sizing: border-box; border: 1px solid transparent; background: transparent; line-height: 1.4;">I specialize in modern residential designs and sustainable spaces.</textarea>
+                    <textarea id="archBioInput" placeholder="Loading specialization profile..." readonly class="profile-static-input" style="width: 100%; height: 75px; resize: none; font-family: inherit; font-size: 0.85rem; padding: 8px; border-radius: 8px; box-sizing: border-box; border: 1px solid transparent; background: transparent; line-height: 1.4;"></textarea>
                 </div>
 
                 <div class="profile-actions">
@@ -102,7 +100,7 @@
             <h2 class="welcome-heading" id="welcomeText">Welcome Architect!</h2>
 
             <div class="search-container">
-                <input type="text" placeholder="Search Appointments" disabled class="disabled-field">
+                <input type="text" id="appointmentSearchInput" placeholder="Search Appointments by client name..." onkeyup="filterAppointmentsBySearch()">
                 <img src="search.png" alt="Search" class="search-icon">
             </div>
 
@@ -150,7 +148,6 @@
             targetedView.classList.add('visible');
         }
 
-       
         let isArchEditActive = false;
         function toggleArchProfileEdit() {
             const emailField = document.getElementById('archEmailInput');
@@ -205,7 +202,6 @@
             }
         }
 
-        // Wired up avatar handling with live database base64 persistence
         function handleArchAvatar(event) {
             const imageFile = event.target.files[0];
             if (imageFile && currentArchitectUid) {
@@ -332,7 +328,6 @@
                                 <p style="margin: 0; font-size: 0.85rem; color: #111;"><strong>${appointmentData.clientName}</strong> requested a consultation on <strong>${appointmentData.date}</strong> at <strong>${appointmentData.time}</strong>.</p>
                             </div>`;
                         
-                        
                         if (!notifiedAppointments.has(appointmentId)) {
                             notifiedAppointments.add(appointmentId);
                             brandNewIncomingRequest = appointmentData;
@@ -342,7 +337,6 @@
                     }
                 });
 
-                // notif alert
                 if (brandNewIncomingRequest) {
                     alert(`🔔 New Appointment Request!\n\n${brandNewIncomingRequest.clientName} has requested a slot on ${brandNewIncomingRequest.date} at ${brandNewIncomingRequest.time}. Check your notifications tab!`);
                 }
@@ -361,6 +355,11 @@
 
         function displayScheduleForDate(dateStr) {
             activeSelectedDateString = dateStr;
+            
+            // Clear search field value when changing target date context
+            const searchInput = document.getElementById('appointmentSearchInput');
+            if (searchInput) searchInput.value = '';
+
             const container = document.getElementById('archScheduleContainer');
             container.innerHTML = '';
 
@@ -400,6 +399,44 @@
             });
         }
 
+        function filterAppointmentsBySearch() {
+            const searchQuery = document.getElementById('appointmentSearchInput').value.toLowerCase().trim();
+            const scheduleStack = document.getElementById('archScheduleContainer');
+            const cards = scheduleStack.getElementsByClassName('schedule-card');
+            let visibleCount = 0;
+
+            for (let i = 0; i < cards.length; i++) {
+                const clientNameNode = cards[i].querySelector('.schedule-details h5');
+                if (clientNameNode) {
+                    const clientName = clientNameNode.innerText.toLowerCase();
+                    if (clientName.includes(searchQuery)) {
+                        cards[i].style.display = 'flex';
+                        visibleCount++;
+                    } else {
+                        cards[i].style.display = 'none';
+                    }
+                }
+            }
+
+            const dynamicNoticeId = 'search-empty-notice';
+            let existingNotice = document.getElementById(dynamicNoticeId);
+
+            if (visibleCount === 0 && cards.length > 0) {
+                if (!existingNotice) {
+                    const notice = document.createElement('p');
+                    notice.id = dynamicNoticeId;
+                    notice.className = 'placeholder-notice-text';
+                    notice.style.padding = '20px 0';
+                    notice.innerText = 'No matching appointments found for this search.';
+                    scheduleStack.appendChild(notice);
+                }
+            } else {
+                if (existingNotice) {
+                    existingNotice.remove();
+                }
+            }
+        }
+
         function changeAppointmentStatus(appointmentId, targetState) {
             database.ref('appointments/' + appointmentId).update({ status: targetState })
             .then(() => {
@@ -432,7 +469,6 @@
             historyContainer.innerHTML = parsedCount > 0 ? structuralHTML : `<p class="placeholder-notice-text">No processed appointments found.</p>`;
         }
 
-        // -calendar
         let currentCalendarDate = new Date(2026, 4, 17); 
         const monthsArray = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -493,11 +529,16 @@
             renderInteractiveCalendar();
         }
 
-        // session workflow
         auth.onAuthStateChanged(user => {
             if (user) {
                 currentArchitectUid = user.uid;
                 
+                document.getElementById('welcomeText').innerText = "Welcome Architect!";
+                document.getElementById('archNameHeader').innerText = "Loading profile...";
+                document.getElementById('archEmailInput').value = "";
+                document.getElementById('archBioInput').value = "";
+                updateArchAvatarUI(null);
+
                 database.ref('users/' + currentArchitectUid).once('value')
                 .then(snapshot => {
                     const userData = snapshot.val();
@@ -508,6 +549,8 @@
                         
                         if (userData.bio) {
                             document.getElementById('archBioInput').value = userData.bio;
+                        } else {
+                            document.getElementById('archBioInput').placeholder = "No bio updated yet. Click Edit Profile to add details.";
                         }
 
                         if (userData.profilePic) {
