@@ -15,7 +15,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
 <script>
-
   const firebaseConfig = {
     apiKey: "AIzaSyDWbXPNHbF5Hj4rQ8lwQA_C1cnqmpHltsc", 
     authDomain: "arkipointment.firebaseapp.com",
@@ -25,7 +24,6 @@
     appId: "1:19182685710:web:89ee8beb8c11705b85765f",
     databaseURL: "https://arkipointment-default-rtdb.firebaseio.com"
   };
-  
 
   if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
@@ -44,7 +42,7 @@
 
         <div id="homePage" class="dash-view visible">
             <header class="dash-header">
-                <h2 id="welcomeText">Welcome User!</h2>
+                <h2 id="welcomeText">Welcome!</h2>
                 <div class="header-icons">
                     <img src="notification.png" alt="Notifications" class="icon-btn" onclick="switchView('notificationPage')">
                     <img src="profile.png" alt="Profile" class="icon-btn" onclick="switchView('clientProfilePage')">
@@ -132,13 +130,13 @@
                 </div>
 
                 <div class="editable-name-container" style="text-align: center; margin-bottom: 10px; width: 100%;">
-    <input type="text" id="profileNameInput" placeholder="Loading name..." readonly class="profile-static-input" style="font-size: 2.2rem; font-weight: bold; text-align: center; border: none; background: transparent; width: 100%; font-family: inherit; color: inherit; outline: none;">
-</div>
+                    <input type="text" id="profileNameInput" placeholder="Loading name..." readonly class="profile-static-input" style="font-size: 2.2rem; font-weight: bold; text-align: center; border: none; background: transparent; width: 100%; font-family: inherit; color: inherit; outline: none;">
+                </div>
 
-<div class="editable-email-container">
-    <label class="field-label-spec">Email:</label>
-    <input type="email" id="clientEmailInput" placeholder="Loading email..." readonly class="profile-static-input">
-</div>
+                <div class="editable-email-container">
+                    <label class="field-label-spec">Email:</label>
+                    <input type="email" id="clientEmailInput" placeholder="Loading email..." readonly class="profile-static-input">
+                </div>
 
                 <div class="profile-actions">
                     <button id="editProfileBtn" class="action-mini-btn" onclick="toggleProfileEditState()">Edit Profile</button>
@@ -193,7 +191,6 @@
             }
         }
 
-        // discov feed
         function loadDiscoverFeed() {
             const feedContainer = document.getElementById('discoverFeedContainer');
             
@@ -214,7 +211,6 @@
                             ? `background-image: url('${userData.profilePic}'); background-size: cover; background-position: center;` 
                             : `background-color: #333;`;
 
-                        
                         feedContainer.innerHTML += `
                             <div class="architect-feed-card" data-name="${(userData.name || '').toLowerCase()}" style="cursor: pointer; width: 100%;" onclick="viewArchitectProfile('${userUid}')">
                                 <div class="architect-card" style="${cardBg} height: 140px; border-radius: 14px; position: relative; overflow: hidden; display: flex; align-items: flex-end; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); box-sizing: border-box;">
@@ -234,7 +230,6 @@
             });
         }
 
-        // 
         function filterArchitectsGrid() {
             const query = document.getElementById('searchInput').value.trim().toLowerCase();
             const cards = document.querySelectorAll('.architect-feed-card');
@@ -252,7 +247,6 @@
                 }
             });
 
-            
             const existingNotice = document.getElementById('searchEmptyNotice');
             if (visibleCount === 0 && cards.length > 0) {
                 feedContainer.style.display = "block"; 
@@ -306,7 +300,6 @@
             });
         }
 
-        // calendar
         function revealClientBookingCalendar() {
             document.getElementById('clientCalendarPanel').classList.remove('hidden');
             document.getElementById('clientPortfolioSection').classList.add('hidden');
@@ -469,7 +462,6 @@
             }).catch(err => alert("Booking error: " + err.message));
         }
 
-        // prof upds pare
         function syncClientDashboardData() {
             database.ref('appointments').orderByChild('clientUid').equalTo(currentClientUid)
             .on('value', snapshot => {
@@ -511,7 +503,6 @@
             });
         }
 
-        
         let isProfileEditing = false;
         function toggleProfileEditState() {
             const nameInp = document.getElementById('profileNameInput');
@@ -561,10 +552,15 @@
             }
         }
 
-        
         auth.onAuthStateChanged(user => {
             if (user) {
                 currentClientUid = user.uid;
+                
+                // Reset immediate DOM values to generic/blank loading patterns
+                document.getElementById('welcomeText').innerText = `Welcome!`;
+                document.getElementById('profileNameInput').value = "";
+                document.getElementById('clientEmailInput').value = user.email || "";
+
                 database.ref('users/' + currentClientUid).once('value').then(snapshot => {
                     const data = snapshot.val();
                     currentClientName = (data && data.name) ? data.name : "Client Account";
