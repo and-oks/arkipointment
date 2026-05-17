@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArkiPointment - Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght=0,400..700;1,400..700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+<script>
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDWbXPNHbF5Hj4rQ8lwQA_C1cnqmpHltsc", 
+    authDomain: "arkipointment.firebaseapp.com",
+    projectId: "arkipointment",
+    storageBucket: "arkipointment.firebasestorage.app",
+    messagingSenderId: "19182685710",
+    appId: "1:19182685710:web:89ee8beb8c11705b85765f",
+    databaseURL: "https://arkipointment-default-rtdb.firebaseio.com"
+  };
+  
+
+  if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+  }
+  const auth = firebase.auth();
+  const database = firebase.database();
+</script>
+
+    <div class="app-container dashboard-bg">
+        <div class="shadow-orb top-left"></div>
+        <div class="shadow-orb bottom-right"></div>
+
+        <header class="global-app-header">
+            <h1 class="logo center-logo">ArkiPointment</h1>
+        </header>
+
+        <div id="homePage" class="dash-view visible">
+            <header class="dash-header">
+                <h2 id="welcomeText">Welcome User!</h2>
+                <div class="header-icons">
+                    <img src="notification.png" alt="Notifications" class="icon-btn" onclick="switchView('notificationPage')">
+                    <img src="profile.png" alt="Profile" class="icon-btn" onclick="switchView('clientProfilePage')">
+                </div>
+            </header>
+
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="Search Architects" class="search-input-field" oninput="filterArchitectsGrid()">
+                <img src="search.png" alt="Search" class="search-icon">
+            </div>
+
+            <h3 class="section-title">DISCOVER ARCHITECTS</h3>
+
+            <div id="discoverFeedContainer">
+                <p class="placeholder-notice-text">Looking for available architects...</p>
+            </div>
+        </div>
+
+        <div id="architectProfilePage" class="dash-view hidden">
+            <header class="dash-header">
+                <span class="back-home" onclick="switchView('homePage')">Home</span>
+                <img src="notification.png" alt="Notifications" class="icon-btn" onclick="switchView('notificationPage')">
+            </header>
+
+            <div class="profile-hero">
+                <div class="avatar-circle" id="targetArchAvatar">
+                    <span class="user-avatar-placeholder" id="targetArchAvatarText">👤</span>
+                </div>
+                <h2 class="profile-title-name" id="targetArchName">Architect Name</h2>
+                <p class="profile-email" id="targetArchEmail">Email: template@gmail.com</p>
+                <p class="bio-text" id="targetArchBio" style="text-align: center; color: #555; margin: 5px 0 15px 0;">Architect description</p>
+                
+                <button class="book-appointment-btn" id="mainBookingTriggerBtn" onclick="revealClientBookingCalendar()">Book an Appointment</button>
+            </div>
+
+            <div id="clientCalendarPanel" class="hidden" style="width: 100%; margin-top: 25px;">
+                <h3 class="section-title-alt">Select Date & Time</h3>
+                
+                <div class="mono-calendar">
+                    <div class="cal-header">
+                        <span id="clientCalMonthYear">May 2026</span>
+                        <div class="cal-arrows">
+                            <span onclick="shiftClientMonth(-1)" style="cursor: pointer;">&lt;</span>
+                            <span onclick="shiftClientMonth(1)" style="cursor: pointer;">&gt;</span>
+                        </div>
+                    </div>
+                    <div class="cal-days-grid" id="clientCalendarDaysGrid"></div>
+                </div>
+
+                <div class="time-slot-picker-row" style="margin-top: 15px; width: 100%;">
+                    <select id="timeSlotDropdown" class="action-mini-btn" style="width: 100%; text-align: center; text-align-last: center; padding: 10px; background-color: #D4D4D4; border: none; border-radius: 14px; font-family: inherit; font-size: 0.9rem; font-weight: 500; cursor: pointer;" onchange="selectDropdownTimeSlot(this.value)">
+                        <option value="" disabled selected>Select an Agenda Time Slot</option>
+                        <option value="10:00 AM">10:00 AM</option>
+                        <option value="1:00 PM">1:00 PM</option>
+                        <option value="3:00 PM">3:00 PM</option>
+                        <option value="5:00 PM">5:00 PM</option>
+                    </select>
+                </div>
+
+                <button class="book-appointment-btn" style="background-color: #111111; color: #ffffff; margin-top: 20px; width: 100%;" onclick="confirmVisualBookingMock()">Confirm Appointment Request</button>
+            </div>
+
+            <div class="portfolio-section" id="clientPortfolioSection" style="margin-top: 25px;">
+                <h3>Portfolio</h3>
+                <div class="portfolio-card" style="margin-top: 10px; border-radius: 12px; overflow: hidden; background: #ddd; height: 150px; display: flex; align-items: center; justify-content: center; color: #666;">
+                    <span>[ Portfolio Image Placeholder ]</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="clientProfilePage" class="dash-view hidden">
+            <header class="dash-header">
+                <span class="back-home" onclick="switchView('homePage')">Home</span>
+                <img src="notification.png" alt="Notifications" class="icon-btn" onclick="switchView('notificationPage')">
+            </header>
+
+            <div class="profile-hero">
+                <div class="avatar-wrapper">
+                    <label for="avatarUpload" class="avatar-click-zone">
+                        <div class="avatar-circle editable" id="avatarDisplay">
+                            <span class="user-avatar-placeholder" id="avatarText">👤</span>
+                        </div>
+                    </label>
+                    <input type="file" id="avatarUpload" accept="image/*" class="hidden-file-input" disabled onchange="handleAvatarSelection(event)">
+                </div>
+
+                <div class="editable-name-container" style="text-align: center; margin-bottom: 10px; width: 100%;">
+                    <input type="text" id="profileNameInput" value="User" readonly class="profile-static-input" style="font-size: 2.2rem; font-weight: bold; text-align: center; border: none; background: transparent; width: 100%; font-family: inherit; color: inherit; outline: none;">
+                </div>
+                
+                <div class="editable-email-container">
+                    <label class="field-label-spec">Email:</label>
+                    <input type="email" id="clientEmailInput" value="vanessa@gmail.com" readonly class="profile-static-input">
+                </div>
+
+                <div class="profile-actions">
+                    <button id="editProfileBtn" class="action-mini-btn" onclick="toggleProfileEditState()">Edit Profile</button>
+                    <button class="action-mini-btn" onclick="handleLogoutWorkflow()">Logout</button>
+                </div>
+            </div>
+
+            <div class="history-section">
+                <h3>APPOINTMENT HISTORY</h3>
+                <div class="history-list-wrapper empty-log-state">
+                    <p class="placeholder-notice-text">No appointments scheduled yet.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="notificationPage" class="dash-view hidden">
+            <header class="dash-header">
+                <span class="back-home" onclick="switchView('homePage')">Home</span>
+            </header>
+            <h3 class="notif-header-title">NOTIFICATIONS</h3>
+            <div class="notifications-list empty-log-state">
+                <p class="placeholder-notice-text">No active notifications.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let currentClientUid = null;
+        let currentClientName = "Client Account";
+        let targetArchitectUid = null;
+        let selectedDateString = "";
+        let selectedTimeSlot = "";
+        let architectApprovedDates = []; 
+        let rawBookingsDatabase = []; 
+        let clientCalendarDate = new Date(2026, 4, 17);
+        const monthsArray = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+        function switchView(viewId) {
+            document.querySelectorAll('.dash-view').forEach(view => {
+                view.classList.remove('visible');
+                view.classList.add('hidden');
+            });
+            const activeView = document.getElementById(viewId);
+            activeView.classList.remove('hidden');
+            activeView.classList.add('visible');
+
+            if (viewId !== 'architectProfilePage') {
+                document.getElementById('clientCalendarPanel').classList.add('hidden');
+                document.getElementById('clientPortfolioSection').classList.remove('hidden');
+                document.getElementById('mainBookingTriggerBtn').classList.remove('hidden');
+            }
+        }
+
+        // discov feed
+        function loadDiscoverFeed() {
+            const feedContainer = document.getElementById('discoverFeedContainer');
+            
+            feedContainer.style.display = "grid";
+            feedContainer.style.gridTemplateColumns = "repeat(2, 1fr)";
+            feedContainer.style.gap = "15px";
+            feedContainer.innerHTML = ''; 
+
+            database.ref('users').once('value').then(snapshot => {
+                let archCount = 0;
+                snapshot.forEach(childSnapshot => {
+                    const userData = childSnapshot.val();
+                    const userUid = childSnapshot.key;
+
+                    if (userData.role === 'architect') {
+                        archCount++;
+                        const cardBg = userData.profilePic 
+                            ? `background-image: url('${userData.profilePic}'); background-size: cover; background-position: center;` 
+                            : `background-color: #333;`;
+
+                        
+                        feedContainer.innerHTML += `
+                            <div class="architect-feed-card" data-name="${(userData.name || '').toLowerCase()}" style="cursor: pointer; width: 100%;" onclick="viewArchitectProfile('${userUid}')">
+                                <div class="architect-card" style="${cardBg} height: 140px; border-radius: 14px; position: relative; overflow: hidden; display: flex; align-items: flex-end; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); box-sizing: border-box;">
+                                    <div style="position: absolute; inset: 0; background: linear-gradient(transparent, rgba(0,0,0,0.8));"></div>
+                                    <div style="position: relative; color: white; z-index: 2; width: 100%;">
+                                        <h4 class="arch-card-title-string" style="margin: 0; font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${userData.name || 'Registered Architect'}</h4>
+                                        <p style="margin: 3px 0 0 0; font-size: 0.75rem; opacity: 0.85; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${userData.bio || 'Click to view profile and portfolio.'}</p>
+                                    </div>
+                                </div>
+                            </div>`;
+                    }
+                });
+                if (archCount === 0) {
+                    feedContainer.style.display = "block"; 
+                    feedContainer.innerHTML = `<p class="placeholder-notice-text">No architects registered yet.</p>`;
+                }
+            });
+        }
+
+        // 
+        function filterArchitectsGrid() {
+            const query = document.getElementById('searchInput').value.trim().toLowerCase();
+            const cards = document.querySelectorAll('.architect-feed-card');
+            const feedContainer = document.getElementById('discoverFeedContainer');
+            
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const nameAttr = card.getAttribute('data-name') || '';
+                if (nameAttr.includes(query)) {
+                    card.style.display = "block";
+                    visibleCount++;
+                } else {
+                    card.style.display = "none";
+                }
+            });
+
+            
+            const existingNotice = document.getElementById('searchEmptyNotice');
+            if (visibleCount === 0 && cards.length > 0) {
+                feedContainer.style.display = "block"; 
+                if (!existingNotice) {
+                    const notice = document.createElement('p');
+                    notice.id = "searchEmptyNotice";
+                    notice.className = "placeholder-notice-text";
+                    notice.innerText = "No matching architects found.";
+                    feedContainer.appendChild(notice);
+                }
+            } else {
+                if (cards.length > 0) {
+                    feedContainer.style.display = "grid"; 
+                }
+                if (existingNotice) {
+                    existingNotice.remove();
+                }
+            }
+        }
+
+        function viewArchitectProfile(archUid) {
+            targetArchitectUid = archUid;
+            switchView('architectProfilePage');
+
+            database.ref('users/' + archUid).once('value').then(snapshot => {
+                const data = snapshot.val();
+                if (data) {
+                    document.getElementById('targetArchName').innerText = data.name || "Architect";
+                    document.getElementById('targetArchEmail').innerText = "Email: " + (data.email || "N/A");
+                    document.getElementById('targetArchBio').innerText = data.bio || "No specialization profile listed.";
+                    
+                    const avatarNode = document.getElementById('targetArchAvatar');
+                    if (data.profilePic) {
+                        avatarNode.style.backgroundImage = `url('${data.profilePic}')`;
+                        avatarNode.style.backgroundSize = 'cover';
+                        document.getElementById('targetArchAvatarText').style.opacity = '0';
+                    } else {
+                        avatarNode.style.backgroundImage = 'none';
+                        document.getElementById('targetArchAvatarText').style.opacity = '1';
+                    }
+
+                    const galleryNode = document.getElementById('clientPortfolioSection');
+                    if (data.portfolioImg) {
+                        galleryNode.innerHTML = `<h3>Portfolio</h3><div style="margin-top:10px; border-radius:12px; overflow:hidden; height:180px; background-image:url('${data.portfolioImg}'); background-size:cover; background-position:center;"></div>`;
+                    } else {
+                        galleryNode.innerHTML = `<h3>Portfolio</h3><p class="placeholder-notice-text">No portfolio projects uploaded by this architect.</p>`;
+                    }
+
+                    fetchArchitectBlockedDates();
+                }
+            });
+        }
+
+        // calendar
+        function revealClientBookingCalendar() {
+            document.getElementById('clientCalendarPanel').classList.remove('hidden');
+            document.getElementById('clientPortfolioSection').classList.add('hidden');
+            document.getElementById('mainBookingTriggerBtn').classList.add('hidden');
+            
+            selectedDateString = "";
+            selectedTimeSlot = "";
+            document.getElementById('timeSlotDropdown').value = "";
+            
+            renderClientCalendar();
+            updateTimeSlotDropdownAvailability();
+        }
+
+        function fetchArchitectBlockedDates() {
+            architectApprovedDates = [];
+            rawBookingsDatabase = [];
+            
+            database.ref('appointments').orderByChild('architectUid').equalTo(targetArchitectUid)
+            .once('value').then(snapshot => {
+                const approvedCountsPerDate = {};
+                
+                snapshot.forEach(child => {
+                    const booking = child.val();
+                    rawBookingsDatabase.push(booking);
+                    
+                    if (booking.status === 'approved') {
+                        approvedCountsPerDate[booking.date] = (approvedCountsPerDate[booking.date] || 0) + 1;
+                    }
+                });
+
+                for (const dateKey in approvedCountsPerDate) {
+                    if (approvedCountsPerDate[dateKey] >= 4) {
+                        architectApprovedDates.push(dateKey);
+                    }
+                }
+                
+                renderClientCalendar();
+                updateTimeSlotDropdownAvailability();
+            });
+        }
+
+        function renderClientCalendar() {
+            const monthDisplay = document.getElementById('clientCalMonthYear');
+            const gridDisplay = document.getElementById('clientCalendarDaysGrid');
+            const currentYear = clientCalendarDate.getFullYear();
+            const currentMonth = clientCalendarDate.getMonth();
+
+            monthDisplay.innerText = `${monthsArray[currentMonth]} ${currentYear}`;
+            gridDisplay.innerHTML = "<div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div>";
+
+            const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
+            const totalDaysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const totalDaysPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
+
+            for (let i = firstDayIndex; i > 0; i--) {
+                const cell = document.createElement('div');
+                cell.className = 'old';
+                cell.innerText = totalDaysPrevMonth - i + 1;
+                gridDisplay.appendChild(cell);
+            }
+
+            for (let day = 1; day <= totalDaysInMonth; day++) {
+                const cell = document.createElement('div');
+                cell.innerText = day;
+                cell.style.cursor = 'pointer';
+
+                const loopDateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+                if (architectApprovedDates.includes(loopDateStr)) {
+                    cell.style.backgroundColor = "#FFD2D2";
+                    cell.style.color = "#990000";
+                    cell.style.cursor = "not-allowed";
+                    cell.title = "Date fully occupied";
+                }
+
+                if (loopDateStr === selectedDateString) {
+                    cell.className = 'active-day';
+                }
+
+                cell.addEventListener('click', () => {
+                    if (architectApprovedDates.includes(loopDateStr)) {
+                        alert("This date is completely fully booked. Please select another slot.");
+                        return;
+                    }
+                    document.querySelectorAll('#clientCalendarDaysGrid div').forEach(d => d.classList.remove('active-day'));
+                    cell.className = 'active-day';
+                    selectedDateString = loopDateStr;
+                    
+                    selectedTimeSlot = "";
+                    document.getElementById('timeSlotDropdown').value = "";
+                    
+                    updateTimeSlotDropdownAvailability();
+                });
+
+                gridDisplay.appendChild(cell);
+            }
+        }
+
+        function updateTimeSlotDropdownAvailability() {
+            const dropdown = document.getElementById('timeSlotDropdown');
+            const options = dropdown.options;
+            
+            const occupiedTimesOnSelectedDate = [];
+            if (selectedDateString) {
+                rawBookingsDatabase.forEach(booking => {
+                    if (booking.date === selectedDateString && booking.status === 'approved') {
+                        occupiedTimesOnSelectedDate.push(booking.time);
+                    }
+                });
+            }
+
+            for (let i = 0; i < options.length; i++) {
+                const opt = options[i];
+                if (opt.value === "") continue;
+
+                if (!selectedDateString) {
+                    opt.disabled = true;
+                    opt.text = opt.value + " (Select a date first)";
+                } else if (occupiedTimesOnSelectedDate.includes(opt.value)) {
+                    opt.disabled = true;
+                    opt.text = opt.value + " (Booked)";
+                } else {
+                    opt.disabled = false;
+                    opt.text = opt.value;
+                }
+            }
+        }
+
+        function shiftClientMonth(dir) {
+            clientCalendarDate.setMonth(clientCalendarDate.getMonth() + dir);
+            renderClientCalendar();
+        }
+
+        function selectDropdownTimeSlot(val) {
+            selectedTimeSlot = val;
+        }
+
+        function confirmVisualBookingMock() {
+            if (!selectedDateString) {
+                alert("Please click an available date on the calendar first.");
+                return;
+            }
+            if (!selectedTimeSlot) {
+                alert("Please select an available time slot from the dropdown menu.");
+                return;
+            }
+
+            const appointmentPayload = {
+                architectUid: targetArchitectUid,
+                clientUid: currentClientUid,
+                clientName: currentClientName,
+                date: selectedDateString,
+                time: selectedTimeSlot,
+                status: "pending"
+            };
+
+            database.ref('appointments').push(appointmentPayload).then(() => {
+                alert("Appointment request sent! Status is set to Pending.");
+                switchView('homePage');
+            }).catch(err => alert("Booking error: " + err.message));
+        }
+
+        // prof upds pare
+        function syncClientDashboardData() {
+            database.ref('appointments').orderByChild('clientUid').equalTo(currentClientUid)
+            .on('value', snapshot => {
+                const notifContainer = document.querySelector('#notificationPage .notifications-list');
+                const historyContainer = document.querySelector('#clientProfilePage .history-list-wrapper');
+                
+                historyContainer.style.display = "flex";
+                historyContainer.style.flexDirection = "column";
+
+                let notifHTML = '';
+                let historyHTML = '';
+                let hasNotifs = false, hasHistory = false;
+
+                snapshot.forEach(child => {
+                    const b = child.val();
+                    hasNotifs = true;
+                    
+                    let badgeColor = b.status === 'pending' ? '#FFCC00' : (b.status === 'approved' ? '#28A745' : '#FF4D4D');
+                    notifHTML += `
+                        <div style="background:#fff; padding:12px; margin-bottom:10px; border-radius:10px; border-left:4px solid ${badgeColor}; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+                            <p style="margin:0; font-size:0.85rem; color:#111;">Your appointment request for <strong>${b.date}</strong> (${b.time}) is <strong style="color:${badgeColor}; text-transform:uppercase;">${b.status}</strong>.</p>
+                        </div>`;
+
+                    if (b.status === 'approved' || b.status === 'declined') {
+                        hasHistory = true;
+                        historyHTML += `
+                            <div style="display:flex; align-items:center; padding:10px 0; border-bottom:1px solid #eee; width: 100%;">
+                                <div style="margin-right:12px;">📅</div>
+                                <div>
+                                    <h5 style="margin:0; font-size:0.9rem;">Consultation Slot</h5>
+                                    <p style="margin:2px 0 0 0; font-size:0.75rem; color:#666;">Date: ${b.date} | Time: ${b.time} | Status: <span style="color:${badgeColor}; font-weight:bold; text-transform:capitalize;">${b.status}</span></p>
+                                </div>
+                            </div>`;
+                    }
+                });
+
+                notifContainer.innerHTML = hasNotifs ? notifHTML : `<p class="placeholder-notice-text">No active notifications.</p>`;
+                historyContainer.innerHTML = hasHistory ? historyHTML : `<p class="placeholder-notice-text">No appointments scheduled yet.</p>`;
+            });
+        }
+
+        
+        let isProfileEditing = false;
+        function toggleProfileEditState() {
+            const nameInp = document.getElementById('profileNameInput');
+            const emailInp = document.getElementById('clientEmailInput');
+            const avatarFile = document.getElementById('avatarUpload');
+            const btn = document.getElementById('editProfileBtn');
+
+            if (!isProfileEditing) {
+                isProfileEditing = true;
+                nameInp.removeAttribute('readonly');
+                nameInp.style.borderBottom = "2px solid #111";
+                emailInp.removeAttribute('readonly');
+                emailInp.classList.add('editing-active-state');
+                avatarFile.removeAttribute('disabled');
+                btn.innerText = "Save Changes";
+            } else {
+                isProfileEditing = false;
+                nameInp.setAttribute('readonly', true);
+                nameInp.style.borderBottom = "none";
+                emailInp.setAttribute('readonly', true);
+                emailInp.classList.remove('editing-active-state');
+                avatarFile.setAttribute('disabled', true);
+                btn.innerText = "Edit Profile";
+
+                if (currentClientUid) {
+                    database.ref('users/' + currentClientUid).update({
+                        name: nameInp.value.trim(),
+                        email: emailInp.value.trim()
+                    }).then(() => alert("Profile updated successfully!"));
+                }
+            }
+        }
+
+        function handleAvatarSelection(event) {
+            const file = event.target.files[0];
+            if (file && currentClientUid) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    database.ref('users/' + currentClientUid).update({ profilePic: e.target.result })
+                    .then(() => {
+                        document.getElementById('avatarDisplay').style.backgroundImage = `url('${e.target.result}')`;
+                        document.getElementById('avatarDisplay').style.backgroundSize = 'cover';
+                        document.getElementById('avatarText').style.opacity = '0';
+                    });
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentClientUid = user.uid;
+                database.ref('users/' + currentClientUid).once('value').then(snapshot => {
+                    const data = snapshot.val();
+                    currentClientName = (data && data.name) ? data.name : "Client Account";
+                    
+                    document.getElementById('welcomeText').innerText = `Welcome, ${currentClientName}!`;
+                    document.getElementById('profileNameInput').value = currentClientName;
+                    document.getElementById('clientEmailInput').value = (data && data.email) ? data.email : user.email;
+
+                    if (data && data.profilePic) {
+                        const disp = document.getElementById('avatarDisplay');
+                        disp.style.backgroundImage = `url('${data.profilePic}')`;
+                        disp.style.backgroundSize = 'cover';
+                        document.getElementById('avatarText').style.opacity = '0';
+                    }
+                    
+                    loadDiscoverFeed();
+                    syncClientDashboardData();
+                });
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        function handleLogoutWorkflow() {
+            auth.signOut().then(() => {
+                window.location.href = 'login.html';
+            });
+        }
+    </script>
+</body>
+</html>

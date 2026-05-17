@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArkiPointment - Register</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght=0,400..700;1,400..700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            padding: 0 25px;
+            box-sizing: border-box;
+            margin-top: 20px;
+        }
+        .auth-input-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 12px;
+            width: 100%;
+        }
+        .auth-input-group label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            letter-spacing: 0.05em;
+            color: #333;
+        }
+        .auth-field {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(0,0,0,0.15);
+            font-family: inherit;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+            background: rgba(255,255,255,0.8);
+        }
+        .auth-select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(0,0,0,0.15);
+            font-family: inherit;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+            background: #EAEAEA;
+            cursor: pointer;
+        }
+        .submit-auth-btn {
+            width: 100%;
+            padding: 14px;
+            background: #111111;
+            color: #ffffff;
+            border: none;
+            border-radius: 14px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.2s;
+        }
+        .submit-auth-btn:hover {
+            background: #333333;
+        }
+        .auth-switch-text {
+            text-align: center;
+            font-size: 0.8rem;
+            margin-top: 15px;
+            color: #555;
+        }
+        .auth-switch-text a {
+            color: #4A7BB0;
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container dashboard-bg">
+        <div class="shadow-orb top-left"></div>
+        <div class="shadow-orb bottom-right"></div>
+
+        <header class="global-app-header" style="margin-top: 40px;">
+            <h1 class="logo center-logo" style="font-size: 2.2rem;">ArkiPointment</h1>
+            <p style="text-align: center; font-size: 0.85rem; color: #666; margin-top: -5px;">Create Your Account</p>
+        </header>
+
+        <form class="auth-form" id="registerForm" onsubmit="executeRegistration(event)">
+            
+            <div class="auth-input-group">
+                <label>FULL NAME</label>
+                <input type="text" id="regName" class="auth-field" placeholder="e.g., Vanessa Corpuz" required>
+            </div>
+
+            <div class="auth-input-group">
+                <label>EMAIL ADDRESS</label>
+                <input type="email" id="regEmail" class="auth-field" placeholder="name@email.com" required>
+            </div>
+
+            <div class="auth-input-group">
+                <label>I AM REGISTERING AS A:</label>
+                <select id="regRole" class="auth-select" required>
+                    <option value="" disabled selected>Select user role...</option>
+                    <option value="client">Client (Looking for Architects)</option>
+                    <option value="architect">Architect (Managing Appointments)</option>
+                </select>
+            </div>
+
+            <div class="auth-input-group">
+                <label>PASSWORD</label>
+                <input type="password" id="regPassword" class="auth-field" placeholder="••••••••" required minlength="6">
+            </div>
+
+            <div class="auth-input-group">
+                <label>CONFIRM PASSWORD</label>
+                <input type="password" id="regConfirmPassword" class="auth-field" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="submit-auth-btn">Register Account</button>
+
+            <p class="auth-switch-text">
+                Already have an account? <a href="login.html">Login here</a>
+            </p>
+        </form>
+
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDWbXPNHbF5Hj4rQ8lwQA_C1cnqmpHltsc", // Fixed master key
+            authDomain: "arkipointment.firebaseapp.com",
+            projectId: "arkipointment",
+            storageBucket: "arkipointment.firebasestorage.app",
+            messagingSenderId: "19182685710",
+            appId: "1:19182685710:web:89ee8beb8c11705b85765f",
+            databaseURL: "https://arkipointment-default-rtdb.firebaseio.com",
+            measurementId: "G-VYD11J6HM5"
+        };
+        
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        function executeRegistration(event) {
+            event.preventDefault();
+
+            const fullName = document.getElementById('regName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const role = document.getElementById('regRole').value;
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regConfirmPassword').value;
+
+            if (password !== confirmPassword) {
+                alert("Error: Passwords do not match. Please retype.");
+                return;
+            }
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    
+                    database.ref('users/' + user.uid).set({
+                        name: fullName,
+                        email: email,
+                        role: role,
+                        bio: role === "architect" ? "I specialize in modern residential designs and sustainable spaces." : ""
+                    }).then(() => {
+                        alert("Account successfully created!");
+                        
+                        if (role === "architect") {
+                            window.location.href = 'architect.html';
+                        } else {
+                            window.location.href = 'dashboard.html';
+                        }
+                    });
+                })
+                .catch((error) => {
+                    alert("Registration Failed: " + error.message);
+                });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArkiPointment - Architect Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght=0,400..700;1,400..700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+    <script>
+      //  web app's Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyDWbXPNHbF5Hj4rQ8lwQA_C1cnqmpHltsc", // Fixed master key
+        authDomain: "arkipointment.firebaseapp.com",
+        projectId: "arkipointment",
+        storageBucket: "arkipointment.firebasestorage.app",
+        messagingSenderId: "19182685710",
+        appId: "1:19182685710:web:89ee8beb8c11705b85765f",
+        databaseURL: "https://arkipointment-default-rtdb.firebaseio.com"
+      };
+      
+      // initalize firebase
+      if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+      }
+      const auth = firebase.auth();
+      const database = firebase.database();
+    </script>
+    
+    <div class="app-container dashboard-bg scrollable-container">
+        <div class="shadow-orb top-left"></div>
+        <div class="shadow-orb bottom-right"></div>
+
+        <header class="global-app-header">
+            <h1 class="logo center-logo">ArkiPointment</h1>
+        </header>
+
+        <nav class="dash-header">
+            <span class="back-home" onclick="switchArchView('archCalendarView')">Appointments</span>
+            <div class="header-icons">
+                <img src="notification.png" alt="Notifications" class="icon-btn" onclick="switchArchView('archNotificationsView')">
+                <img src="profile.png" alt="Architect Profile" class="icon-btn" onclick="switchArchView('archProfileView')">
+            </div>
+        </nav> 
+
+        <div id="archProfileView" class="arch-view visible">
+            <div class="profile-hero">
+                <div class="avatar-wrapper">
+                    <label for="archAvatarUpload">
+                        <div class="avatar-circle editable" id="archAvatarDisplay">
+                            <span class="user-avatar-placeholder" id="archAvatarText">👤</span>
+                        </div>
+                    </label>
+                    <input type="file" id="archAvatarUpload" accept="image/*" class="hidden-file-input" disabled onchange="handleArchAvatar(event)">
+                </div>
+
+                <h2 class="profile-title-name" id="archNameHeader">Ar. Vanessa</h2>
+                
+                <div class="editable-email-container">
+                    <label class="field-label-spec">Email:</label>
+                    <input type="email" id="archEmailInput" value="arvanessa@gmail.com" readonly class="profile-static-input">
+                </div>
+
+                <div class="editable-email-container" style="margin-top: 15px; flex-direction: column; align-items: flex-start; gap: 4px;">
+                    <label class="field-label-spec">Specialization & Bio:</label>
+                    <textarea id="archBioInput" readonly class="profile-static-input" style="width: 100%; height: 75px; resize: none; font-family: inherit; font-size: 0.85rem; padding: 8px; border-radius: 8px; box-sizing: border-box; border: 1px solid transparent; background: transparent; line-height: 1.4;">I specialize in modern residential designs and sustainable spaces.</textarea>
+                </div>
+
+                <div class="profile-actions">
+                    <button id="editArchProfileBtn" class="action-mini-btn" onclick="toggleArchProfileEdit()">Edit Profile</button>
+                    <button class="action-mini-btn" onclick="handleLogout()">Logout</button>
+                </div>
+            </div>
+
+            <div class="portfolio-section">
+                <div class="section-header-flex">
+                    <h3>Portfolio</h3>
+                    <button class="add-portfolio-btn" id="portfolioActionButton" onclick="triggerPortfolioUpload()">+ Add a Portfolio</button>
+                    <input type="file" id="portfolioUpload" accept="image/*" class="hidden-file-input" onchange="handlePortfolioAdd(event)">
+                </div>
+                <div class="portfolio-grid-dynamic" id="portfolioGallery" style="margin-top: 15px; min-height: 150px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 12px;">
+                    <p class="placeholder-notice-text" id="noPortfolioText">No portfolio items added yet.</p>
+                </div>
+            </div>
+
+            <div class="history-section">
+                <h3>APPOINTMENT HISTORY</h3>
+                <div class="history-list-wrapper empty-log-state" id="archHistoryContainer">
+                    <p class="placeholder-notice-text">No appointments scheduled yet.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="archCalendarView" class="arch-view hidden">
+            <h2 class="welcome-heading" id="welcomeText">Welcome Architect!</h2>
+
+            <div class="search-container">
+                <input type="text" placeholder="Search Appointments" disabled class="disabled-field">
+                <img src="search.png" alt="Search" class="search-icon">
+            </div>
+
+            <h3 class="section-title-alt">Calendar</h3>
+
+            <div class="mono-calendar">
+                <div class="cal-header">
+                    <span id="calendarMonthYear">May 2026</span>
+                    <div class="cal-arrows">
+                        <span onclick="changeMonth(-1)" style="cursor: pointer;">&lt;</span>
+                        <span onclick="changeMonth(1)" style="cursor: pointer;">&gt;</span>
+                    </div>
+                </div>
+                <div class="cal-days-grid" id="calendarDaysGrid"></div>
+            </div>
+
+            <h3 class="section-title-alt" style="margin-top: 25px;">Appointments</h3>
+
+            <div class="appointments-schedule-stack empty-log-state" id="archScheduleContainer" style="border: 1px dashed rgba(0,0,0,0.15); padding: 15px; border-radius: 18px;">
+                <p class="placeholder-notice-text" style="padding: 20px 0;">No active or pending appointments found for this date.</p>
+            </div>
+        </div>
+
+        <div id="archNotificationsView" class="arch-view hidden">
+            <h3 class="notif-header-title">NOTIFICATIONS</h3>
+            <div class="notifications-list empty-log-state">
+                <p class="placeholder-notice-text">No active notifications.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let currentArchitectUid = null;
+        let activeSelectedDateString = "2026-05-17"; 
+        let localAppointmentsDatabase = {}; 
+
+        function switchArchView(viewId) {
+            document.querySelectorAll('.arch-view').forEach(view => {
+                view.classList.remove('visible');
+                view.classList.add('hidden');
+            });
+            const targetedView = document.getElementById(viewId);
+            targetedView.classList.remove('hidden');
+            targetedView.classList.add('visible');
+        }
+
+       
+        let isArchEditActive = false;
+        function toggleArchProfileEdit() {
+            const emailField = document.getElementById('archEmailInput');
+            const bioField = document.getElementById('archBioInput');
+            const uploadField = document.getElementById('archAvatarUpload');
+            const buttonField = document.getElementById('editArchProfileBtn');
+
+            if (!isArchEditActive) {
+                isArchEditActive = true;
+                emailField.removeAttribute('readonly');
+                emailField.classList.add('editing-active-state');
+                
+                bioField.removeAttribute('readonly');
+                bioField.classList.add('editing-active-state');
+                bioField.style.border = "1px solid rgba(0,0,0,0.1)";
+                bioField.style.background = "#FFFFFF";
+                
+                uploadField.removeAttribute('disabled');
+                buttonField.innerText = "Save Changes";
+                buttonField.style.backgroundColor = "#A3A3A3";
+                buttonField.style.color = "#FFFFFF";
+            } else {
+                isArchEditActive = false;
+                emailField.setAttribute('readonly', true);
+                emailField.classList.remove('editing-active-state');
+                
+                bioField.setAttribute('readonly', true);
+                bioField.classList.remove('editing-active-state');
+                bioField.style.border = "1px solid transparent";
+                bioField.style.background = "transparent";
+                
+                uploadField.setAttribute('disabled', true);
+                buttonField.innerText = "Edit Profile";
+                buttonField.style.backgroundColor = "#D4D4D4";
+                buttonField.style.color = "#000000";
+
+                const updatedEmail = emailField.value.trim();
+                const updatedBio = bioField.value.trim();
+
+                if (currentArchitectUid) {
+                    database.ref('users/' + currentArchitectUid).update({
+                        email: updatedEmail,
+                        bio: updatedBio
+                    })
+                    .then(() => {
+                        alert("Profile changes committed successfully!");
+                    })
+                    .catch(err => {
+                        alert("Profile update failed: " + err.message);
+                    });
+                }
+            }
+        }
+
+        // Wired up avatar handling with live database base64 persistence
+        function handleArchAvatar(event) {
+            const imageFile = event.target.files[0];
+            if (imageFile && currentArchitectUid) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const base64Data = e.target.result;
+                    
+                    database.ref('users/' + currentArchitectUid).update({
+                        profilePic: base64Data
+                    })
+                    .then(() => {
+                        updateArchAvatarUI(base64Data);
+                    })
+                    .catch(err => {
+                        alert("Failed to save avatar image: " + err.message);
+                    });
+                }
+                reader.readAsDataURL(imageFile);
+            }
+        }
+
+        function updateArchAvatarUI(imgString) {
+            const avatarDiv = document.getElementById('archAvatarDisplay');
+            const textNode = document.getElementById('archAvatarText');
+            if (imgString) {
+                avatarDiv.style.backgroundImage = `url('${imgString}')`;
+                avatarDiv.style.backgroundSize = 'cover';
+                avatarDiv.style.backgroundPosition = 'center';
+                textNode.style.opacity = '0';
+            } else {
+                avatarDiv.style.backgroundImage = 'none';
+                textNode.style.opacity = '1';
+            }
+        }
+
+        function triggerPortfolioUpload() {
+            document.getElementById('portfolioUpload').click();
+        }
+
+        function handlePortfolioAdd(event) {
+            const uploadedFile = event.target.files[0];
+            if (uploadedFile && currentArchitectUid) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const base64Data = e.target.result;
+                    
+                    database.ref('users/' + currentArchitectUid).update({
+                        portfolioImg: base64Data
+                    })
+                    .then(() => {
+                        alert("Portfolio image saved successfully to the database!");
+                        updatePortfolioGalleryUI(base64Data);
+                    })
+                    .catch(err => {
+                        alert("Failed to save portfolio file snapshot: " + err.message);
+                    });
+                }
+                reader.readAsDataURL(uploadedFile);
+            }
+        }
+
+        function deletePortfolioImg() {
+            if (confirm("Are you sure you want to remove your portfolio picture? This cannot be undone.")) {
+                if (currentArchitectUid) {
+                    database.ref('users/' + currentArchitectUid + '/portfolioImg').remove()
+                    .then(() => {
+                        alert("Portfolio item successfully deleted.");
+                        updatePortfolioGalleryUI(null);
+                    })
+                    .catch(err => {
+                        alert("Deletion process encountered an issue: " + err.message);
+                    });
+                }
+            }
+        }
+
+        function updatePortfolioGalleryUI(imgUrl) {
+            const galleryNode = document.getElementById('portfolioGallery');
+            const toggleActionButton = document.getElementById('portfolioActionButton');
+            
+            if (imgUrl) {
+                galleryNode.style.width = '100%';
+                galleryNode.innerHTML = `
+                    <div class="portfolio-card-wrapper" style="position: relative; width: 100%; border-radius: 12px; overflow: hidden; height: 220px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                        <div style="background-image: url('${imgUrl}'); background-size: cover; background-position: center; width: 100%; height: 100%;"></div>
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); padding: 10px; display: flex; justify-content: center; gap: 10px;">
+                            <button onclick="triggerPortfolioUpload()" style="background: #ffffff; color: #111; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer;">Change Photo</button>
+                            <button onclick="deletePortfolioImg()" style="background: #FF4D4D; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer;">Delete Project</button>
+                        </div>
+                    </div>
+                `;
+                toggleActionButton.style.display = "none"; 
+            } else {
+                galleryNode.innerHTML = `<p class="placeholder-notice-text" id="noPortfolioText">No portfolio items added yet.</p>`;
+                toggleActionButton.style.display = "block"; 
+            }
+        }
+
+        let notifiedAppointments = new Set(); 
+
+        function startListeningForBookings() {
+            database.ref('appointments').orderByChild('architectUid').equalTo(currentArchitectUid)
+            .on('value', snapshot => {
+                localAppointmentsDatabase = {};
+                const notificationsContainer = document.querySelector('.notifications-list');
+                let notifAccumulatorHTML = '';
+                let pendingNotifCount = 0;
+                let brandNewIncomingRequest = false;
+
+                snapshot.forEach(childSnapshot => {
+                    const appointmentData = childSnapshot.val();
+                    const appointmentId = childSnapshot.key;
+                    appointmentData.id = appointmentId;
+                    
+                    if (!localAppointmentsDatabase[appointmentData.date]) {
+                        localAppointmentsDatabase[appointmentData.date] = [];
+                    }
+                    localAppointmentsDatabase[appointmentData.date].push(appointmentData);
+
+                    if (appointmentData.status === 'pending') {
+                        pendingNotifCount++;
+                        notifAccumulatorHTML += `
+                            <div style="background: #ffffff; padding: 12px; margin-bottom: 10px; border-radius: 10px; border-left: 4px solid #FFCC00; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
+                                <p style="margin: 0; font-size: 0.85rem; color: #111;"><strong>${appointmentData.clientName}</strong> requested a consultation on <strong>${appointmentData.date}</strong> at <strong>${appointmentData.time}</strong>.</p>
+                            </div>`;
+                        
+                        
+                        if (!notifiedAppointments.has(appointmentId)) {
+                            notifiedAppointments.add(appointmentId);
+                            brandNewIncomingRequest = appointmentData;
+                        }
+                    } else {
+                        notifiedAppointments.add(appointmentId);
+                    }
+                });
+
+                // notif alert
+                if (brandNewIncomingRequest) {
+                    alert(`🔔 New Appointment Request!\n\n${brandNewIncomingRequest.clientName} has requested a slot on ${brandNewIncomingRequest.date} at ${brandNewIncomingRequest.time}. Check your notifications tab!`);
+                }
+
+                if (pendingNotifCount > 0) {
+                    notificationsContainer.innerHTML = notifAccumulatorHTML;
+                } else {
+                    notificationsContainer.innerHTML = `<p class="placeholder-notice-text">No active notifications.</p>`;
+                }
+
+                renderInteractiveCalendar();
+                displayScheduleForDate(activeSelectedDateString);
+                renderAppointmentHistory(snapshot);
+            });
+        }
+
+        function displayScheduleForDate(dateStr) {
+            activeSelectedDateString = dateStr;
+            const container = document.getElementById('archScheduleContainer');
+            container.innerHTML = '';
+
+            const dayBookings = localAppointmentsDatabase[dateStr] || [];
+
+            if (dayBookings.length === 0) {
+                container.innerHTML = `<p class="placeholder-notice-text" style="padding: 20px 0;">No active or pending appointments found for ${dateStr}.</p>`;
+                return;
+            }
+
+            dayBookings.forEach(booking => {
+                if (booking.status === 'approved') {
+                    container.innerHTML += `
+                        <div class="schedule-card approved" style="display: flex; align-items: center; background: #EFFFEE; border: 1px solid rgba(40,167,69,0.15); padding: 12px; margin-bottom: 10px; border-radius: 14px; width: 100%; box-sizing: border-box;">
+                            <div class="schedule-avatar" style="margin-right: 12px; font-size: 1.2rem;">👤</div>
+                            <div class="schedule-details">
+                                <h5 style="margin:0; font-size:0.95rem; font-weight:bold;">${booking.clientName}</h5>
+                                <p style="margin:2px 0 0 0; font-size:0.8rem; color:#444;">Confirmed Slot: <strong>${booking.time}</strong></p>
+                            </div>
+                        </div>`;
+                } else if (booking.status === 'pending') {
+                    container.innerHTML += `
+                        <div class="schedule-card pending" style="display: flex; flex-direction: column; background: #FFFDF0; padding: 12px; margin-bottom: 10px; border-radius: 14px; border: 1px solid #FFCC00; width: 100%; box-sizing: border-box;">
+                            <div style="display: flex; align-items: center;">
+                                <div class="schedule-avatar" style="margin-right: 12px; font-size: 1.2rem;">👤</div>
+                                <div class="schedule-details">
+                                    <h5 style="margin:0; font-size:0.95rem; font-weight:bold;">${booking.clientName}</h5>
+                                    <p style="margin:2px 0 0 0; font-size:0.8rem; color:#555;">Requested: <strong>${booking.time}</strong></p>
+                                </div>
+                            </div>
+                            <div style="margin-top: 10px; display: flex; gap: 10px;">
+                                <button onclick="changeAppointmentStatus('${booking.id}', 'approved')" style="background: #111111; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight:bold; cursor: pointer;">Accept</button>
+                                <button onclick="changeAppointmentStatus('${booking.id}', 'declined')" style="background: #FF4D4D; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight:bold; cursor: pointer;">Decline</button>
+                            </div>
+                        </div>`;
+                }
+            });
+        }
+
+        function changeAppointmentStatus(appointmentId, targetState) {
+            database.ref('appointments/' + appointmentId).update({ status: targetState })
+            .then(() => {
+                alert(`Appointment status updated to ${targetState}.`);
+            })
+            .catch(err => alert("Operation failed: " + err.message));
+        }
+
+        function renderAppointmentHistory(snapshot) {
+            const historyContainer = document.getElementById('archHistoryContainer');
+            let structuralHTML = '';
+            let parsedCount = 0;
+
+            snapshot.forEach(childSnapshot => {
+                const booking = childSnapshot.val();
+                if (booking.status === 'approved' || booking.status === 'declined') {
+                    parsedCount++;
+                    const evaluationStyle = booking.status === 'approved' ? 'color: #28A745; font-weight: bold;' : 'color: #FF4D4D; font-weight: bold;';
+                    structuralHTML += `
+                        <div style="display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">
+                            <div style="margin-right:12px; font-size: 1.1rem;">📅</div>
+                            <div>
+                                <h5 style="margin:0; font-size: 0.9rem;">${booking.clientName}</h5>
+                                <p style="margin:2px 0 0 0; font-size:0.75rem; color:#666;">Date: ${booking.date} (${booking.time}) | Status: <span style="${evaluationStyle} text-transform: capitalize;">${booking.status}</span></p>
+                            </div>
+                        </div>`;
+                }
+            });
+
+            historyContainer.innerHTML = parsedCount > 0 ? structuralHTML : `<p class="placeholder-notice-text">No processed appointments found.</p>`;
+        }
+
+        // -calendar
+        let currentCalendarDate = new Date(2026, 4, 17); 
+        const monthsArray = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+        function renderInteractiveCalendar() {
+            const monthDisplay = document.getElementById('calendarMonthYear');
+            const gridDisplay = document.getElementById('calendarDaysGrid');
+            
+            const currentYear = currentCalendarDate.getFullYear();
+            const currentMonth = currentCalendarDate.getMonth();
+            
+            monthDisplay.innerText = `${monthsArray[currentMonth]} ${currentYear}`;
+            gridDisplay.innerHTML = "<div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div>";
+
+            const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
+            const totalDaysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const totalDaysPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
+
+            for (let i = firstDayIndex; i > 0; i--) {
+                const cell = document.createElement('div');
+                cell.className = 'old';
+                cell.innerText = totalDaysPrevMonth - i + 1;
+                gridDisplay.appendChild(cell);
+            }
+
+            for (let day = 1; day <= totalDaysInMonth; day++) {
+                const cell = document.createElement('div');
+                cell.innerText = day;
+                cell.style.cursor = 'pointer';
+                
+                const loopedDateString = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+                if (localAppointmentsDatabase[loopedDateString]) {
+                    const checkPending = localAppointmentsDatabase[loopedDateString].some(b => b.status === 'pending');
+                    const checkApproved = localAppointmentsDatabase[loopedDateString].some(b => b.status === 'approved');
+                    if (checkPending) {
+                        cell.style.borderBottom = "3px solid #FFCC00";
+                    } else if (checkApproved) {
+                        cell.style.borderBottom = "3px solid #28A745";
+                    }
+                }
+                
+                if (loopedDateString === activeSelectedDateString) {
+                    cell.className = 'active-day';
+                }
+                
+                cell.addEventListener('click', function() {
+                    document.querySelectorAll('#calendarDaysGrid div').forEach(d => d.classList.remove('active-day'));
+                    cell.className = 'active-day';
+                    displayScheduleForDate(loopedDateString);
+                });
+                
+                gridDisplay.appendChild(cell);
+            }
+        }
+
+        function changeMonth(directionMultiplier) {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + directionMultiplier);
+            renderInteractiveCalendar();
+        }
+
+        // session workflow
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentArchitectUid = user.uid;
+                
+                database.ref('users/' + currentArchitectUid).once('value')
+                .then(snapshot => {
+                    const userData = snapshot.val();
+                    if (userData) {
+                        document.getElementById('welcomeText').innerText = `Welcome, ${userData.name || 'Architect'}!`;
+                        document.getElementById('archNameHeader').innerText = userData.name || 'Architect';
+                        document.getElementById('archEmailInput').value = userData.email || user.email;
+                        
+                        if (userData.bio) {
+                            document.getElementById('archBioInput').value = userData.bio;
+                        }
+
+                        if (userData.profilePic) {
+                            updateArchAvatarUI(userData.profilePic);
+                        }
+                        
+                        updatePortfolioGalleryUI(userData.portfolioImg || null);
+                        startListeningForBookings();
+                    }
+                })
+                .catch(err => {
+                    console.error("Error connecting to Architect record logs:", err);
+                });
+
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        function handleLogout() {
+            auth.signOut().then(() => {
+                window.location.href = 'login.html';
+            }).catch(error => {
+                alert("Logout process experienced an issue: " + error.message);
+            });
+        }
+
+        renderInteractiveCalendar();
+    </script>
+</body>
+</html>
